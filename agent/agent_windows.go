@@ -537,9 +537,11 @@ except Exception as e:
 	return "None"
 }
 
-// ShowStatus prints windows service status
-// If called from an interactive desktop, pops up a message box
-// Otherwise prints to the console
+// ShowStatus prints the Tactical Agent and Mesh Agent service statuses.
+//
+// Fork: never displays a GUI window. When launched from an interactive
+// desktop the attached console window is hidden, so nothing appears on
+// screen; the status text still goes to stdout (and the log file).
 func ShowStatus(version string) {
 	statusMap := make(map[string]string)
 	svcs := []string{winSvcName, meshSvcName}
@@ -559,14 +561,11 @@ func ShowStatus(version string) {
 		if w32.GetCurrentProcessId() == consoleProcID {
 			w32.ShowWindow(window, w32.SW_HIDE)
 		}
-		var handle w32.HWND
-		msg := fmt.Sprintf("Agent: %s\n\nMesh Agent: %s", statusMap[winSvcName], statusMap[meshSvcName])
-		w32.MessageBox(handle, msg, fmt.Sprintf("Tactical RMM v%s", version), w32.MB_OK|w32.MB_ICONINFORMATION)
-	} else {
-		fmt.Println("Tactical RMM Version", version)
-		fmt.Println("Tactical Agent:", statusMap[winSvcName])
-		fmt.Println("Mesh Agent:", statusMap[meshSvcName])
 	}
+
+	fmt.Println("Tactical RMM Version", version)
+	fmt.Println("Tactical Agent:", statusMap[winSvcName])
+	fmt.Println("Mesh Agent:", statusMap[meshSvcName])
 }
 
 // PatchMgmnt enables/disables automatic update

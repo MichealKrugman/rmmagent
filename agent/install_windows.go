@@ -17,7 +17,6 @@ import (
 	"os"
 	"path/filepath"
 
-	"github.com/gonutz/w32/v2"
 	"golang.org/x/sys/windows/registry"
 )
 
@@ -106,44 +105,20 @@ func (a *Agent) checkExistingAndRemove(silent bool) {
 		tacUninst := filepath.Join(a.ProgramDir, a.GetUninstallExe())
 		tacUninstArgs := [2]string{tacUninst, "/VERYSILENT"}
 
-		window := w32.GetForegroundWindow()
-		if !silent && window != 0 {
-			var handle w32.HWND
-			msg := "Existing installation found\nClick OK to remove, then re-run the installer.\nClick Cancel to abort."
-			action := w32.MessageBox(handle, msg, "Tactical RMM", w32.MB_OKCANCEL|w32.MB_ICONWARNING)
-			if action == w32.IDOK {
-				a.AgentUninstall("foo")
-			}
-		} else {
-			fmt.Println("Existing installation found and must be removed before attempting to reinstall.")
-			fmt.Println("Run the following command to uninstall, and then re-run this installer.")
-			fmt.Printf(`"%s" %s `, tacUninstArgs[0], tacUninstArgs[1])
-		}
+		// fork: never display a GUI window during install.
+		// The interactive "remove existing installation" prompt has been
+		// intentionally removed so installs are fully silent.
+		fmt.Println("Existing installation found and must be removed before attempting to reinstall.")
+		fmt.Println("Run the following command to uninstall, and then re-run this installer.")
+		fmt.Printf(`"%s" %s `, tacUninstArgs[0], tacUninstArgs[1])
 		os.Exit(0)
 	}
 }
 
 func (a *Agent) installerMsg(msg, alert string, silent bool) {
-	window := w32.GetForegroundWindow()
-	if !silent && window != 0 {
-		var (
-			handle w32.HWND
-			flags  uint
-		)
-
-		switch alert {
-		case "info":
-			flags = w32.MB_OK | w32.MB_ICONINFORMATION
-		case "error":
-			flags = w32.MB_OK | w32.MB_ICONERROR
-		default:
-			flags = w32.MB_OK | w32.MB_ICONINFORMATION
-		}
-
-		w32.MessageBox(handle, msg, "Tactical RMM", flags)
-	} else {
-		fmt.Println(msg)
-	}
+	// fork: never display a GUI window during install.
+	// All install status/error messages are written to stdout/log instead.
+	fmt.Println(msg)
 
 	if alert == "error" {
 		a.Logger.Fatalln(msg)
